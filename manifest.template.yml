@@ -1,0 +1,27 @@
+---
+applications:
+  - name: xxxapp
+    memory: 512M
+    instances: 1
+    buildpacks:
+      - python_buildpack
+    command: python -m app.main
+    env:
+      # Xray 客户端标识
+      UUID: "xxxxxxxx-f8cd-4962-bfaa-xxxxxxxxxxxx"
+  
+      # Argo 模式的 Token
+      ARGO_TOKEN: "eyJhIjoiZ0Luuuuuuuuuul5TVkRreSJ9"
+     
+      DOMAIN: "xxxx.xxx.com"
+
+      # Xray 监听端口
+      XRAY_PORT: "3002"
+
+      FAKE_SNI: "www.visa.com.sg"
+
+      # 临时文件目录（实例重启后会丢失）
+      FILE_PATH: "./tmp"
+
+      SUB_PATH: "/api/sub"
+      SUB_TOKEN: "youserct"
