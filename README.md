@@ -23,16 +23,16 @@
 ## 📂 目录结构
 
     app/ 
-    config.py # 配置与环境变量 
-    utils.py # 工具函数 
-    meta.py # 获取 Cloudflare meta 
-    hotspot.py # 拉取热点新闻 
-    blog.py # 生成 HTML 博客 
-    server.py # HTTP 服务（博客 + 订阅） 
-    xray.py # 生成 Xray 配置 
-    runner.py # 启动 Xray / Cloudflared 
-    links.py # 生成订阅文件 
-    main.py # 启动流程入口 
+      config.py # 配置与环境变量 
+      utils.py # 工具函数 
+      meta.py # 获取 Cloudflare meta 
+      hotspot.py # 拉取热点新闻 
+      blog.py # 生成 HTML 博客 
+      server.py # HTTP 服务（博客 + 订阅） 
+      xray.py # 生成 Xray 配置 
+      runner.py # 启动 Xray / Cloudflared 
+      links.py # 生成订阅文件 
+      main.py # 启动流程入口 
     requirements.txt # Python 依赖 
     Procfile # BTP 启动命令 
     manifest.yml # BTP 部署配置 
@@ -79,7 +79,15 @@ cf push myapp \
   -e SUB_PATH=/api/sub \
   -e SUB_TOKEN=mysecret
 
+**访问订阅**
+
+  https://app里面btp平台分配的域名/api/sub?token=mysecret
+
+或者app日志里面查看
+
 ### **VPS（直连/Argo模式）**
+
+先安装依赖，在运行：
 
 export MODE=direct
 export UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
@@ -91,9 +99,9 @@ export SUB_PATH=/api/sub
 export SUB_TOKEN=mysecret
 python3 main.py
 
-### **访问订阅**
+**访问订阅**
 
-    https://你的域名/api/sub?token=mysecret
+  https://你的域名:PORT/api/sub?token=mysecret
 
 ---
 
