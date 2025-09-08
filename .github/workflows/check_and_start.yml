@@ -1,0 +1,54 @@
+name: Check and Start SAP BTP App
+
+on:
+  schedule:
+    - cron: '30 0 * * *'  # 每天 UTC 0:30
+  workflow_dispatch:
+
+jobs:
+  check_and_start:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Cloud Foundry CLI
+        run: |
+          wget -qO- https://packages.cloudfoundry.org/stable?release=linux64-binary | tar -xz
+          sudo mv cf /usr/local/bin/
+
+      - name: CF Login
+        env:
+          CF_API: ${{ secrets.CF_API }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG: ${{ secrets.CF_ORG }}
+          CF_SPACE: ${{ secrets.CF_SPACE }}
+        run: |
+          cf api "$CF_API" --skip-ssl-validation
+          cf auth "$CF_USERNAME" "$CF_PASSWORD"
+          cf target -o "$CF_ORG" -s "$CF_SPACE"
+
+      - name: Check and Start App
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
+        run: |
+          for i in {1..5}; do
+            STATUS=$(cf app "$APP_NAME" | grep -i 'requested state' | awk '{print $NF}')
+            if [ "$STATUS" = "started" ]; then
+              echo "App is running."
+              exit 0
+            else
+              echo "App is not running. Attempting to start (try $i)..."
+              cf start "$APP_NAME"
+              sleep 60
+            fi
+          done
+          STATUS=$(cf app "$APP_NAME" | grep -i 'requested state' | awk '{print $NF}')
+          if [ "$STATUS" = "started" ]; then
+            echo "App started successfully."
+            exit 0
+          else
+            echo "App failed to start after 5 attempts."
+            exit 1

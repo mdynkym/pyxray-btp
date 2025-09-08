@@ -1,5 +1,4 @@
-
-# Xray + Cloudflared SAP BTP平台 与 VPS 双模式版
+# Xray + Cloudflared SAP BTP平台 与 VPS 部署
 
 ## 📌 项目简介
 
@@ -22,45 +21,87 @@
 
 ## 📂 目录结构
 
-    app/ 
-      config.py # 配置与环境变量 
-      utils.py # 工具函数 
-      meta.py # 获取 Cloudflare meta 
-      hotspot.py # 拉取热点新闻 
-      blog.py # 生成 HTML 博客 
-      server.py # HTTP 服务（博客 + 订阅） 
-      xray.py # 生成 Xray 配置 
-      runner.py # 启动 Xray / Cloudflared 
-      links.py # 生成订阅文件 
-      main.py # 启动流程入口 
-    requirements.txt # Python 依赖 
-    Procfile # BTP 启动命令 
-    manifest.yml # BTP 部署配置 
-    runtime.txt # Python 运行时版本
+```
+pyxray-btp/
+├── app/
+│   ├── blog.py           # 生成 HTML 博客
+│   ├── config.py         # 配置与环境变量
+│   ├── hotspot.py        # 拉取热点新闻
+│   ├── links.py          # 生成订阅文件
+│   ├── main.py           # 启动流程入口
+│   ├── meta.py           # 获取 Cloudflare meta
+│   ├── runner.py         # 启动 Xray / Cloudflared
+│   ├── server.py         # HTTP 服务（博客 + 订阅）
+│   ├── utils.py          # 工具函数
+│   └── xray.py           # 生成 Xray 配置
+├── requirements.txt      # Python 依赖
+├── Procfile              # BTP 启动命令
+├── manifest.yml          # BTP 部署配置
+├── runtime.txt           # Python 运行时版本
+```
 
 ---
 
 ## ⚙️ 环境变量说明
 
-| 变量名 | 说明 | 示例 |
-|--------|------|------|
-| `MODE` | 运行模式：`argo` 或 `direct` | `argo` |
-| `UUID` | VLESS 用户 UUID | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
-| `XRAY_PORT` | Xray监听端口 | `3001` |
-| `FAKE_SNI` | 可选，Cloudflared SNI 伪装域名 | `www.visa.com.sg` |
-| `ARGO_TOKEN` | 可选，Cloudflared 固定隧道 token | `<token>` |
-| `DOMAIN` | 指向Argo 或 公网端口（VPS） | `xxx.xxx.com` |
-| `PORT` | 博客 HTTP 服务端口 | `8080` |
-| `SUB_PATH` | 订阅路径 | `/api/sub` |
-| `SUB_TOKEN` | 订阅访问密码 | `mysecret` |
+| 变量名      | 说明                           | 示例                                  |
+|-------------|--------------------------------|---------------------------------------|
+| `APP_NAME`  | SAP BTP 应用名称（防止重名）   | `myapp`                               |
+| `MODE`      | 运行模式：`argo` 或 `direct`   | `argo`                                |
+| `UUID`      | VLESS 用户 UUID                | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`|
+| `XRAY_PORT` | Xray监听端口                   | `3001`                                |
+| `FAKE_SNI`  | 可选，Cloudflared SNI 伪装域名 | `www.visa.com.sg`                     |
+| `ARGO_TOKEN`| 可选，Cloudflared 固定隧道 token| `<token>`                             |
+| `DOMAIN`    | 指向Argo 或 公网端口（VPS）    | `xxx.xxx.com`                         |
+| `PORT`      | 博客 HTTP 服务端口             | `8080`                                |
+| `SUB_PATH`  | 订阅路径                       | `/api/sub`                            |
+| `SUB_TOKEN` | 订阅访问密码                   | `mysecret`                            |
 
 ---
 
-## 🚀 部署方法
+## 🚀 自动化部署方法（推荐）
+
+本项目已集成 GitHub Actions 自动化部署和健康检测，无需手动安装 Python 环境，推送后 SAP BTP 平台会自动安装依赖。
+
+### 自动部署
+
+1. 在 GitHub 项目设置 Secrets，添加以下变量：
+   - `CF_API`、`CF_USERNAME`、`CF_PASSWORD`、`CF_ORG`、`CF_SPACE`
+   - `APP_NAME`、`UUID`、`DOMAIN`、`SUB_TOKEN`、`FAKE_SNI` 等业务相关变量
+
+2. 推送到 main 分支或手动触发 workflow，GitHub Actions 会自动：
+   - 下载并安装 Cloud Foundry CLI
+   - 登录 SAP BTP
+   - 执行如下部署命令（APP_NAME 通过环境变量获取）：
+
+      ```sh
+      cf push $APP_NAME \
+        -b python_buildpack \
+        -m 512M \
+        -c "python -m app.main" \
+        -e MODE=argo \
+        -e UUID=$UUID \
+        -e XRAY_PORT=3001 \
+        -e DOMAIN=$DOMAIN \
+        -e FAKE_SNI=$FAKE_SNI \
+        -e SUB_PATH=/api/sub \
+        -e SUB_TOKEN=$SUB_TOKEN
+      ```
+
+3. 部署完成后，SAP BTP 平台会自动安装 Python 环境并启动应用。
+
+### 自动健康检测与重启
+
+- 每天 UTC 0:30，GitHub Actions 会自动检测 APP 是否运行。
+- 若未运行，则自动调用 `cf start $APP_NAME`，每分钟重试一次，最多 5 次，确保服务高可用。
+
+---
+
+## 🚀 手动部署方法
 
 ### **BTP（Cloudflared 模式）**
 
-在根目录下先将 manifest.template.yml 复制改名为 manifest.yml 相应值改正确，然后直接：
+克隆项目后，先将 manifest.template.yml 复制改名为 manifest.yml 相应值改正确，然后直接：
 
 cf push
 
@@ -115,13 +156,11 @@ python3 main.py
 
 例如 /api/sub?token=mysecret
 
-## 🛠 健康检测
+## 🛠 健康检测与排错
 
-启动时会自动检测：
-
-### Xray 进程 / 配置 / 端口
-
-### Cloudflared 进程（argo 模式）
+  - **启动时会自动检测以下进程并有日志输出，方便排错**：
+    - Xray 进程 / 配置 / 端口
+    - Cloudflared 进程（argo 模式）
 
 ## 📜 许可证
 

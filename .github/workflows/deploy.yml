@@ -1,0 +1,52 @@
+name: Deploy to SAP BTP
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Cloud Foundry CLI
+        run: |
+          wget -qO- https://packages.cloudfoundry.org/stable?release=linux64-binary | tar -xz
+          sudo mv cf /usr/local/bin/
+
+      - name: CF Login
+        env:
+          CF_API: ${{ secrets.CF_API }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG: ${{ secrets.CF_ORG }}
+          CF_SPACE: ${{ secrets.CF_SPACE }}
+        run: |
+          cf api "$CF_API" --skip-ssl-validation
+          cf auth "$CF_USERNAME" "$CF_PASSWORD"
+          cf target -o "$CF_ORG" -s "$CF_SPACE"
+
+      - name: Push to SAP BTP
+        env:
+          UUID: ${{ secrets.UUID }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          SUB_TOKEN: ${{ secrets.SUB_TOKEN }}
+          APP_NAME: ${{ secrets.APP_NAME }}
+          FAKE_SNI: ${{ secrets.FAKE_SNI }}
+        run: |
+          cf push "$APP_NAME" \
+            -b python_buildpack \
+            -m 512M \
+            -c "python -m app.main.py" \
+            -e MODE=argo \
+            -e UUID="$UUID" \
+            -e XRAY_PORT=3001 \
+            -e DOMAIN="$DOMAIN" \
+            -e FAKE_SNI=$FAKE_SNI \
+            -e SUB_PATH=/api/sub \
+            -e SUB_TOKEN="$SUB_TOKEN"
