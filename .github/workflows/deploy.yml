@@ -17,7 +17,9 @@ jobs:
       - name: Install Cloud Foundry CLI
         run: |
           wget -qO- https://packages.cloudfoundry.org/stable?release=linux64-binary | tar -xz
-          sudo mv cf /usr/local/bin/
+          # 查找真实的 cf 可执行文件并移动
+          find . -type f -name cf -exec sudo mv {} /usr/local/bin/cf \;
+          sudo chmod +x /usr/local/bin/cf
 
       - name: CF Login
         env:
