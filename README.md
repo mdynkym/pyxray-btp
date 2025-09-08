@@ -103,10 +103,13 @@ pyxray-btp/
 
 克隆项目后，先将 manifest.template.yml 复制改名为 manifest.yml 相应值改正确，然后直接：
 
+```sh
 cf push
+```
 
 或者在 app 目录下：
 
+```sh
 cf push myapp \
   -b python_buildpack \
   -m 256M \
@@ -119,6 +122,7 @@ cf push myapp \
   -e FAKE_SNI=www.visa.com.sg \
   -e SUB_PATH=/api/sub \
   -e SUB_TOKEN=mysecret
+```
 
 **访问订阅**
 
@@ -130,6 +134,7 @@ cf push myapp \
 
 先安装依赖，在运行：
 
+```sh
 export MODE=direct
 export UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 export XRAY_PORT=443
@@ -139,6 +144,7 @@ export PORT=8080
 export SUB_PATH=/api/sub
 export SUB_TOKEN=mysecret
 python3 main.py
+```
 
 **访问订阅**
 
